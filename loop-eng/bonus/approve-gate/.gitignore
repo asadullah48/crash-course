@@ -1,0 +1,5 @@
+# Your own permission overrides — yours, not the project's.
+.claude/settings.local.json
+
+# The synthetic playground built by `gate.py --setup` — regenerate it, don't commit it.
+.claude/skills/approve-gate/scripts/sandbox/

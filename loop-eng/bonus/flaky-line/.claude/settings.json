@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(flaky-line)",
+      "Bash(python3 .claude/skills/flaky-line/scripts/flakyline.py *)",
+      "WebFetch(domain:httpbin.org)"
+    ]
+  }
+}

@@ -17,3 +17,8 @@ A loop runs on a **heartbeat** and remembers through a **spine**. The heartbeat 
 ## Prerequisites
 
 [Claude Code](https://code.claude.com) and an internet connection. The projects use live public APIs that need no key and no sign-up.
+
+## Bonus projects (this fork, not part of the official crash course)
+
+Four more loop-engineering patterns the numbering above doesn't cover: retry loops, bounded loops,
+human-in-the-loop checkpoints, and self-review loops. See [bonus/](bonus/) for all four.

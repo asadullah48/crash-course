@@ -1,0 +1,5 @@
+# Your own permission overrides — yours, not the project's.
+.claude/settings.local.json
+
+# Your draft — personal, and the point is to write your own, not commit ours.
+pitch.md

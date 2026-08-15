@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(budget-watch)",
+      "Bash(python3 .claude/skills/budget-watch/scripts/budgetwatch.py *)",
+      "WebFetch(domain:api.github.com)"
+    ]
+  }
+}

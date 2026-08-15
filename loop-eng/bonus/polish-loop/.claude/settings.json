@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(polish-loop)",
+      "Bash(python3 .claude/skills/polish-loop/scripts/critic.py *)"
+    ]
+  }
+}

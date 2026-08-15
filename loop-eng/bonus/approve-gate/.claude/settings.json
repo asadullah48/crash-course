@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(approve-gate)",
+      "Bash(python3 .claude/skills/approve-gate/scripts/gate.py *)"
+    ]
+  }
+}
