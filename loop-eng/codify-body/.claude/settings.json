@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash .claude/skills/codify-body/scripts/run_fix_loop.sh *)",
+      "Bash(git worktree *)",
+      "Bash(git -C * *)"
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+--- bug.py
++++ bug.py
+@@ -2,4 +2,6 @@
+     """Clamp x into the 0-100 range."""
+     if x < 0:
+         return 0
+-    return x  # bug: never clamps the upper bound
++    if x > 100:
++        return 100
++    return x
