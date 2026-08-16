@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(watch-loop)",
+      "Bash(python3 .claude/skills/watch-loop/scripts/long_task.py *)",
+      "Bash(python3 .claude/skills/watch-loop/scripts/check_status.py *)"
+    ]
+  }
+}
