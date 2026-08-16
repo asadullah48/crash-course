@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(fix-loop)",
+      "Bash(git worktree *)",
+      "Bash(git -C * *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)"
+    ]
+  }
+}
