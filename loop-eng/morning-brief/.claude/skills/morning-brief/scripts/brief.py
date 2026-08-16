@@ -163,6 +163,7 @@ def main():
         lines.append("New commits since last run: none.")
     lines.append(f"Open TODO/FIXME comments in repo: {todo_count}")
     lines.append("")
+    lines.append("")  # blank line between this entry and the next one
     new_entry = "\n".join(lines)
 
     if head is not None:
