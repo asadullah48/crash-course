@@ -100,8 +100,13 @@ def gather_commits(since, head):
 
 
 def count_todos():
-    """How many TODO/FIXME comments exist in the repo right now."""
-    code, out = _git("grep", "-nIE", "TODO|FIXME")
+    """How many TODO/FIXME comments exist in the repo right now.
+
+    Excludes this project's own files, since they were being counted too.
+    """
+    code, out = _git(
+        "grep", "-nIE", "TODO|FIXME", "--", ".", ":(exclude)loop-eng/morning-brief/**"
+    )
     if code not in (0, 1):  # git grep exits 1 for "no matches" -- not an error
         return -1
     return len([line for line in out.splitlines() if line.strip()])
