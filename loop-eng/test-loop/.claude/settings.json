@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(test-loop)",
+      "Bash(python3 .claude/skills/test-loop/scripts/checker.py *)"
+    ]
+  }
+}
