@@ -1,0 +1,17 @@
+# Directories this loop is ALLOWED to lint-sweep -- one path per line,
+# relative to the repo root. Lines starting with # are ignored.
+#
+# Deliberately an ALLOWLIST, not "everything under loop-eng/": the original
+# course-provided starter kits (iss-loop, sky-watch, portfolio-starter,
+# paper-watch, doorbell, bonus/*) are not ours to auto-reformat, and adding
+# a directory here is a decision a human makes on purpose (Concept 14 /
+# "narrow the loop to what its job needs" -- same idea as the claude/ branch
+# prefix and the read-only checker).
+#
+# A directory listed here that no longer exists is NOT skipped quietly --
+# see loop-eng/break-it-on-purpose/ for exactly why.
+
+loop-eng/watch-loop
+loop-eng/morning-brief
+loop-eng/break-it-on-purpose
+loop-eng/daily-loop
