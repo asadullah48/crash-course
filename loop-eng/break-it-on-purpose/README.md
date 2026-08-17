@@ -89,3 +89,59 @@ deterministic Python script instead of paying LLM tokens to re-derive `git log` 
 every time. Concept 13's warning example (a maker+checker beat, every five minutes) hits
 over $1,800/month; this loop is roughly **4,000× cheaper**, purely from cadence and
 shape — the same lever the course names as the biggest one.
+
+## Step 3 — Sabotage it: point the prompt at a file that does not exist
+
+Added one small feature to `brief.py`: an optional `sources.md` lets the brief fold in
+extra files. Then `sources.md` was pointed at `docs/release-highlights.md` — a file that
+was never created:
+
+```
+$ cat sources.md
+docs/release-highlights.md
+```
+
+No safety net was added around this yet — a realistic first cut, the kind a real edit
+would actually ship.
+
+## Step 4 — Let it fire on schedule and fail
+
+```
+$ python .claude/skills/morning-brief/scripts/brief.py
+
+Traceback (most recent call last):
+  File ".../brief.py", line 191, in <module>
+    main()
+  File ".../brief.py", line 166, in main
+    sources = read_sources()
+  File ".../brief.py", line 121, in read_sources
+    return [(path, open(path, encoding="utf-8").read().strip()) for path in paths]
+FileNotFoundError: [Errno 2] No such file or directory: 'docs/release-highlights.md'
+
+EXIT CODE: 1
+```
+
+It failed, loudly, in the terminal. But an `/schedule every morning at 8am` run has no
+one watching that terminal. So the real question is: **what does this look like from
+the spine, the next morning?**
+
+```
+$ cat progress.md
+...
+## 2026-08-17 08:19 UTC
+
+New commits since last run: none.
+Open TODO/FIXME comments in repo: 0
+
+$ cat loop.log
+cat: loop.log: No such file or directory
+```
+
+**Nothing.** `progress.md`'s last entry is indistinguishable from a normal clean run —
+it was written by the *previous*, successful beat, and the crashed beat never got far
+enough to touch it. `loop.log` doesn't exist at all. Read only the spine, as the
+project's own rule requires, and this beat's failure is **invisible**. That is the
+silent failure this project exists to catch: loud in a terminal nobody was watching,
+silent in the only record that survives until morning.
+
+## Step 5 — Fix that first: add the log line

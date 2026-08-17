@@ -30,6 +30,7 @@ if hasattr(sys.stdout, "reconfigure"):
     # which can't print the emoji below -- force UTF-8 output everywhere else too.
 
 SPINE = "progress.md"  # the memory file — read first, written last
+SOURCES = "sources.md"  # optional: extra files to fold into the brief, one path per line
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -107,11 +108,24 @@ def count_todos():
     return len([line for line in out.splitlines() if line.strip()])
 
 
+def read_sources():
+    """Optional extra context: sources.md lists more files to fold into the
+    brief, one path per line. Most runs never have this file."""
+    if not os.path.exists(SOURCES):
+        return []
+    paths = [
+        line.strip()
+        for line in open(SOURCES, encoding="utf-8")
+        if line.strip() and not line.startswith("#")
+    ]
+    return [(path, open(path, encoding="utf-8").read().strip()) for path in paths]
+
+
 # ══════════════════════════════════════════════════════════════════════════
 #  showing the result on screen
 # ══════════════════════════════════════════════════════════════════════════
 
-def show(now, first_run, commits, todo_count):
+def show(now, first_run, commits, todo_count, sources):
     print()
     print(f"  🌅  MORNING BRIEF  ·  {now}")
     if first_run:
@@ -124,6 +138,8 @@ def show(now, first_run, commits, todo_count):
     for line in commits:
         print(f"   • {line}")
     print(f"   open TODO/FIXME comments right now: {todo_count}")
+    for path, _ in sources:
+        print(f"   + folded in extra context from {path}")
     print("  " + "-" * 60)
     print(f"   saved this to {SPINE}, so tomorrow's run remembers it.")
     print()
@@ -147,9 +163,10 @@ def main():
     head = current_head()
     commits = gather_commits(last_commit, head)
     todo_count = count_todos()
+    sources = read_sources()
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    show(now, first_run, commits, todo_count)
+    show(now, first_run, commits, todo_count, sources)
 
     # 3. WRITE THE SPINE — move the bookmark to HEAD and append today's entry,
     #    so the NEXT run starts from here instead of reporting all this again.
