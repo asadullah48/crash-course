@@ -100,8 +100,14 @@ def gather_commits(since, head):
 
 
 def count_todos():
-    """How many TODO/FIXME comments exist in the repo right now."""
-    code, out = _git("grep", "-nIE", "TODO|FIXME")
+    """How many TODO/FIXME comments exist in the repo right now.
+
+    Only counts TODO/FIXME when it follows a real comment marker (#, //, or
+    <!--) -- not anywhere the words appear, which previously matched prose
+    that merely *talks about* TODO/FIXME (this file's own docstrings included)
+    and wildly over-counted as a result.
+    """
+    code, out = _git("grep", "-nIE", r"(#|//|<!--)[[:space:]]*(TODO|FIXME)\b")
     if code not in (0, 1):  # git grep exits 1 for "no matches" -- not an error
         return -1
     return len([line for line in out.splitlines() if line.strip()])
