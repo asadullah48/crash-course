@@ -71,8 +71,52 @@ the week-long unattended run is actually testing.
 
 ## Heartbeat
 
-<!-- filled in after the routine is created and test-fired -->
+A real Claude Code cloud routine (`RemoteTrigger`/`/schedule`, not a local cron job):
+
+- **Name:** `daily-lint-sweep`, id `trig_01BJm6f8soS7KLid6LiPREAc`
+- **Schedule:** `0 3 * * *` UTC = **8:00am Asia/Karachi, every day**
+- **Repo:** `https://github.com/asadullah48/crash-course` (cloned fresh each beat — the
+  routine has no access to this local machine, only what's on GitHub)
+- **Prompt:** self-contained (the cloud agent starts with zero context each beat) —
+  points it at `SKILL.md`, tells it to follow the four steps exactly, and trust the
+  script's exit code as the final verdict rather than re-judging the work itself.
 
 ## Status
 
-<!-- filled in after landing on main and the first real fire -->
+**As of 2026-08-17, ~09:37 UTC — verified, not assumed:**
+
+Test-fired the routine twice (`action: "run"`) to prove the mechanism actually works,
+before trusting the schedule to fire it unattended:
+
+**Fire 1** (`cse_01F4PJP33wusWfhCg9Wr9KjZ`) — **found a real bug**, not a planted one:
+`scope.txt` listed `loop-eng/break-it-on-purpose`, but that project's own PR (#7)
+hadn't been merged to `main` yet when this routine was created. The loop caught it
+exactly as designed: `lint_sweep.py` exited 1, wrote a `NEEDS HUMAN` note to both
+`progress.md` and `loop.log`, and the agent — per the skill — made no manual fix,
+opened no PR, cleanly removed the worktree, and **sent a real push notification**:
+*"Lint-sweep beat FAILED — scope.txt references a missing directory, needs a human.
+No PR opened."* This is Concept 14 working exactly as intended, on a mistake that
+was actually mine, not staged.
+
+**Fixed the real cause**, not the symptom: merged PR #7 to `main` (after resolving one
+merge conflict in `loop-eng/.gitignore` from two branches independently adding the same
+line — a `daily-loop`-scope issue in its own right, now resolved).
+
+**Fire 2** (`cse_01NrXeCxqkhScr4AKE1sDBE8`) — clean recovery, exit 0, all 4 scoped
+directories ruff-clean, no PR, no notification, worktree removed. No code change was
+needed — only what the note actually asked for.
+
+**What this proves:** the heartbeat fires, clones from GitHub (not local disk), reads
+the skill, creates and removes worktrees correctly, the maker-checker split holds, the
+spine and harness log both work under a real failure, and the connector step is
+correctly gated on exit code 2 (never fired in either test, correctly, since neither
+beat found real fixable issues).
+
+**What this does NOT yet prove, and is not being claimed:**
+
+| Done-when criterion | Status |
+| --- | --- |
+| Run unattended for a week | ❌ **Not yet.** Two manually-triggered test-fires ≠ a week of the schedule firing on its own. First real scheduled fire: **2026-08-18, ~03:00 UTC**. Check back after **2026-08-24** — `RemoteTrigger action: "list_runs"` on `trig_01BJm6f8soS7KLid6LiPREAc`, or `cat loop-eng/daily-loop/progress.md` after a `git pull`, should show ~7 daily entries with no scheduling gaps. |
+| Trust what it ships because you read it | Partial — the two test-fires were read in full above. A week of real diffs, read the same way, is what this line actually asks for. |
+| Concept 15 — did understanding keep up? | Honest answer so far: **yes, because the first real fire forced it to** — the missing-directory bug surfaced a real gap between what `scope.txt` claimed and what was actually merged, and closing that gap required reading the failure, not just green-lighting it. |
+| Slow the loop down if not | Not triggered — daily is working so far. If a week of real fires shows drift, switch `daily-lint-sweep`'s cron to weekly via `RemoteTrigger action: "update"`. |
