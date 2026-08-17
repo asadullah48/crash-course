@@ -2,10 +2,21 @@
 
 **Loop Engineering, Concept 7 (event-driven) + Concept 10 (connectors).**
 
-**Status: PAUSED.** Live GitHub setup was in progress when Anthropic's install
-service returned a transient error. This file is the exact state to resume from.
-Nothing below has been faked or assumed working — everything marked "done" was
-actually observed; everything marked "next" has not run yet.
+**Status: SETUP COMPLETE, verification pending.** `/install-github-app` was
+retried in a later session and succeeded: `CLAUDE_CODE_OAUTH_TOKEN` now exists
+as a repo secret, and the installer pushed `.github/workflows/claude-code-review.yml`
+(PR-triggered, no prompt needed) + `.github/workflows/claude.yml` (`@claude`
+mention-triggered, bonus/not required for this project) on a separate branch
+(`add-claude-github-actions-1786953102351`), with no PR opened for it.
+
+Those two files were copied onto this branch in place of the hand-copied
+`doorbell.yml`, which is now deleted — the installer's `claude-code-review.yml`
+covers the same `pull_request` trigger (plus `ready_for_review`/`reopened`) and
+is the maintained, official version, so keeping both would have fired two
+redundant reviews per PR event. See "What actually happened this session" below
+for the original blocked attempt; the "Resume from here" section has been
+updated to reflect what's left: steps 1-3 are done, 4-8 (plant a bug, watch it
+fire twice) are still open.
 
 ## The goal
 
@@ -62,16 +73,13 @@ official flow finishes, and keep only one.
 
 ## Resume from here, next session
 
-1. Retry `/install-github-app` (transient error, so it likely just works now).
-   Choose **create a long-lived token with your Claude subscription** when asked,
-   and select the **review workflow**. It pushes a branch and opens a PR in your
-   browser -- create and merge that PR.
-2. `gh secret list --repo asadullah48/crash-course` should then show
-   `CLAUDE_CODE_OAUTH_TOKEN` (or `ANTHROPIC_API_KEY`).
-3. Compare whatever workflow file that PR added against
-   `.github/workflows/doorbell.yml` on the `add-doorbell-workflow` branch here --
-   keep one, delete the other, make sure it's merged to `main` (workflows only
-   fire using the version on the PR's *base* branch).
+1. ~~Retry `/install-github-app`~~ **DONE** -- succeeded on retry, no PR was
+   auto-opened but the workflow branch was pushed.
+2. ~~`gh secret list` should show `CLAUDE_CODE_OAUTH_TOKEN`~~ **DONE** --
+   verified present (`gh secret list --repo asadullah48/crash-course`).
+3. ~~Compare workflow files, keep one, merge to `main`~~ **DONE** -- kept the
+   installer's `claude-code-review.yml` (+ bonus `claude.yml`), deleted the
+   hand-copied `doorbell.yml`, merged to `main` via PR.
 4. **Plant one bug** in a small PR (an off-by-one, a deleted null check -- the
    existing kit's own README has a ready-made example using `readings.py`'s
    `average_altitude`).
