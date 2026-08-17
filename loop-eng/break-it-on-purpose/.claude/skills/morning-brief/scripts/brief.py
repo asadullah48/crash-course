@@ -12,11 +12,22 @@ progress.md, the spine — and writes to it last. That file is the memory.
 HOW TO READ THIS FILE (to learn the spine):
     The whole lesson is 3 steps, and you can see them at the bottom, in main():
         1. READ the spine   -> read_spine()
-        2. do the work       -> gather_commits(), count_todos()
+        2. do the work       -> gather_commits(), count_todos(), read_sources()
         3. WRITE the spine   -> write_spine()
     read_spine() and write_spine() ARE the lesson — they're short, read those.
     The git calls just ask the repo what changed; you do NOT need to understand
     them to understand the spine. Treat them as a black box.
+
+PROJECT 7 ADDITIONS (Break It on Purpose — Concept 13 cost, Concept 14 +
+observability): this is Project 3's loop, unmodified except for two things --
+    - read_sources() -- an optional sources.md lets someone point this brief
+      at extra files. If one of those files goes missing, that is treated as
+      a real failure, not skipped quietly. That is the SABOTAGE vector: see
+      sources.md and loop-eng/break-it-on-purpose/README.md for how it was
+      broken on purpose and what it looked like from the spine alone.
+    - log_beat() / mark_failure() -- loop.log, the harness log: what the
+      SYSTEM did, every beat, success or fail. progress.md remains the spine:
+      what the WORK found. Two files, two questions, read together.
 """
 
 import argparse
@@ -25,12 +36,15 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252,
-    # which can't print the emoji below -- force UTF-8 output everywhere else too.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252,
+        # which can't print the emoji below -- force UTF-8 on both streams, since
+        # mark_failure()'s "needs a human" note prints to stderr, not just stdout.
 
 SPINE = "progress.md"  # the memory file — read first, written last
 SOURCES = "sources.md"  # optional: extra files to fold into the brief, one path per line
+LOG = "loop.log"  # the HARNESS log — what the system did, separate from what the work did
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -110,7 +124,13 @@ def count_todos():
 
 def read_sources():
     """Optional extra context: sources.md lists more files to fold into the
-    brief, one path per line. Most runs never have this file."""
+    brief, one path per line. Most runs never have this file, so most runs
+    return []. But if sources.md DOES list a path, that path is a promise --
+    something a human decided belongs in every brief. A promised source that
+    has gone missing (renamed, deleted, moved) is not something to shrug off
+    and skip: it is exactly the kind of overnight failure this project exists
+    to rehearse, so a missing listed file raises, on purpose, instead of
+    being swallowed here."""
     if not os.path.exists(SOURCES):
         return []
     paths = [
@@ -118,7 +138,11 @@ def read_sources():
         for line in open(SOURCES, encoding="utf-8")
         if line.strip() and not line.startswith("#")
     ]
-    return [(path, open(path, encoding="utf-8").read().strip()) for path in paths]
+    read = []
+    for path in paths:
+        with open(path, encoding="utf-8") as f:  # missing path -> FileNotFoundError, uncaught here
+            read.append((path, f.read().strip()))
+    return read
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -146,6 +170,39 @@ def show(now, first_run, commits, todo_count, sources):
 
 
 # ══════════════════════════════════════════════════════════════════════════
+#  OBSERVABILITY  —  what the SYSTEM did, not what the work found. Every beat
+#  logs here, success or failure, so a run that breaks is never a run that
+#  vanishes. progress.md is the spine (the work's memory); loop.log is the
+#  harness log (the system's memory) -- Concept 14, "checking the work is
+#  still your job," starts with being able to tell the two apart.
+# ══════════════════════════════════════════════════════════════════════════
+
+def log_beat(status, detail=""):
+    """One line, every beat, appended, never overwritten. status is OK or
+    FAILED; detail is free text -- what happened, or what broke."""
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    line = f"{now}  status={status}"
+    if detail:
+        line += f"  detail={detail}"
+    with open(LOG, "a", encoding="utf-8") as f:
+        f.write(line + "\n")
+
+
+def mark_failure(reason):
+    """Leave a note a human can't miss. Two copies, on purpose: one in
+    loop.log (the system record -- read this to see the loop is unwell at
+    all) and one in progress.md (the spine -- read this to see, in the same
+    place as every other day's entry, exactly which beat broke and why).
+    Whoever reads either file first still gets the full picture."""
+    log_beat("FAILED", detail=f"{reason} — NEEDS HUMAN")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    prior = open(SPINE, encoding="utf-8").read() if os.path.exists(SPINE) else ""
+    entry = f"## {now}\n\n**FAILED — NEEDS HUMAN.** {reason}\n\n\n"
+    open(SPINE, "w", encoding="utf-8").write(prior + entry)
+    print(f"\n  🚨  BEAT FAILED — NEEDS A HUMAN: {reason}\n", file=sys.stderr)
+
+
+# ══════════════════════════════════════════════════════════════════════════
 #  the loop, one beat:   READ the spine  ->  do the work  ->  WRITE the spine
 # ══════════════════════════════════════════════════════════════════════════
 
@@ -159,11 +216,18 @@ def main():
     last_commit, prior_entries = read_spine()
     first_run = last_commit is None
 
-    # 2. DO THE WORK — gather only what is new since the bookmark.
-    head = current_head()
-    commits = gather_commits(last_commit, head)
-    todo_count = count_todos()
-    sources = read_sources()
+    # 2. DO THE WORK — gather only what is new since the bookmark. A file
+    #    listed in sources.md that no longer exists raises here, uncaught by
+    #    anything below this line -- which is exactly the failure this
+    #    project rehearses, so it is left to escape into the except below.
+    try:
+        head = current_head()
+        commits = gather_commits(last_commit, head)
+        todo_count = count_todos()
+        sources = read_sources()
+    except OSError as exc:
+        mark_failure(f"could not finish gathering the brief: {exc}")
+        sys.exit(1)
 
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     show(now, first_run, commits, todo_count, sources)
@@ -179,12 +243,18 @@ def main():
     else:
         lines.append("New commits since last run: none.")
     lines.append(f"Open TODO/FIXME comments in repo: {todo_count}")
+    for path, _ in sources:
+        lines.append(f"Folded in extra context from: {path}")
     lines.append("")
     lines.append("")  # blank line between this entry and the next one
     new_entry = "\n".join(lines)
 
     if head is not None:
         write_spine(head, prior_entries, new_entry)
+
+    # 4. LOG THE BEAT — the system's own record that this run happened and
+    #    finished clean, separate from what the work found (see log_beat()).
+    log_beat("OK", detail=f"{len(commits)} commit(s), {todo_count} TODOs")
 
 
 if __name__ == "__main__":

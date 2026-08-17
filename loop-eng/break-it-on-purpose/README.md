@@ -145,3 +145,101 @@ silent failure this project exists to catch: loud in a terminal nobody was watch
 silent in the only record that survives until morning.
 
 ## Step 5 — Fix that first: add the log line
+
+Two additions to `brief.py`, nothing else touched:
+
+- **`log_beat(status, detail)`** — appends one line to `loop.log` every beat, success or
+  failure. This is the *harness* log: what the **system** did. `progress.md` stays the
+  *spine*: what the **work** found. Concept 14 turns on being able to tell those two
+  apart — a loop that only ever writes the spine has no record of a beat that broke
+  before it got far enough to write anything.
+- **`mark_failure(reason)`** — on any `OSError` while gathering the brief (a missing
+  `sources.md` file included), write the failure to *both* `loop.log` and `progress.md`,
+  print a `🚨 NEEDS A HUMAN` banner, and exit non-zero. Two copies on purpose: whichever
+  file a human opens first, they get the full picture.
+
+Re-fired the exact same sabotaged case:
+
+```
+$ python .claude/skills/morning-brief/scripts/brief.py
+  🚨  BEAT FAILED — NEEDS A HUMAN: could not finish gathering the brief: [Errno 2] No such file or directory: 'docs/release-highlights.md'
+
+EXIT CODE: 1
+```
+
+**A real bug turned up here, and it's worth keeping in the record rather than editing
+away.** The first attempt at that banner printed as `\U0001f6a8 BEAT FAILED � NEEDS...`
+— garbled. The original script only reconfigured `sys.stdout` to UTF-8 for the emoji in
+`show()`; `mark_failure()`'s banner prints to `sys.stderr`, which was still on Windows'
+default `cp1252` and couldn't encode `🚨` or `—`. Fixed by reconfiguring both streams.
+The underlying files (`loop.log`, `progress.md`) were unaffected the whole time — they're
+opened with `encoding="utf-8"` explicitly — only the *console echo* of the failure note
+was briefly unreadable. Small, but it's exactly the kind of thing this rehearsal is for:
+better to find a broken "needs a human" note now than at 3am when it's the only thing
+standing between a real failure and silence.
+
+## Diagnose the failure — from the spine alone
+
+Reading **only** `loop.log` and `progress.md`, no replay, no re-running anything:
+
+```
+$ cat loop.log
+2026-08-17 08:27 UTC  status=FAILED  detail=could not finish gathering the brief: [Errno 2] No such file or directory: 'docs/release-highlights.md' — NEEDS HUMAN
+2026-08-17 08:28 UTC  status=FAILED  detail=could not finish gathering the brief: [Errno 2] No such file or directory: 'docs/release-highlights.md' — NEEDS HUMAN
+
+$ tail -8 progress.md
+## 2026-08-17 08:27 UTC
+
+**FAILED — NEEDS HUMAN.** could not finish gathering the brief: [Errno 2] No such file or directory: 'docs/release-highlights.md'
+
+## 2026-08-17 08:28 UTC
+
+**FAILED — NEEDS HUMAN.** could not finish gathering the brief: [Errno 2] No such file or directory: 'docs/release-highlights.md'
+```
+
+**What failed:** `sources.md` lists `docs/release-highlights.md` as a required extra
+source, and that file doesn't exist — `read_sources()` raised `FileNotFoundError`
+before the beat could finish.
+**When:** first at `2026-08-17 08:27 UTC`, and again at `08:28 UTC` — two separate
+beats, same cause, so it's not a one-off blip.
+**What it needs:** exactly what both files say — `NEEDS HUMAN` — because a missing
+promised file isn't something the loop can fix by retrying; a person has to either
+create the file or remove it from `sources.md`.
+
+## Recovery — a human acts on the note
+
+```
+$ cat > docs/release-highlights.md   # the human creates the missing file
+$ python .claude/skills/morning-brief/scripts/brief.py
+
+  🌅  MORNING BRIEF  ·  2026-08-17 08:29 UTC
+      2 new commit(s) since last run
+  ------------------------------------------------------------
+   • edba811 Sabotage the loop: point sources.md at a file that does not exist
+   • b557b8b Add break-it-on-purpose: Project 3's loop, unmodified
+   open TODO/FIXME comments right now: 12
+   + folded in extra context from docs/release-highlights.md
+  ------------------------------------------------------------
+   saved this to progress.md, so tomorrow's run remembers it.
+
+EXIT CODE: 0
+$ tail -1 loop.log
+2026-08-17 08:29 UTC  status=OK  detail=2 commit(s), 12 TODOs
+```
+
+Clean exit, `status=OK` back in `loop.log`, extra source folded in as intended. The
+loop didn't need code changes to recover — only the thing the note actually asked for.
+
+## Done when — checked against the project's own criteria
+
+| Criterion | Evidence |
+| --- | --- |
+| State what failed, and when, from the spine alone | Done above, reading only `loop.log` + `progress.md` — a missing `sources.md` entry, `08:27` and `08:28 UTC`. |
+| The loop leaves a clear "needs a human" note instead of failing silently | `🚨 NEEDS A HUMAN` in both files, present tense, unmissable — **but only after Step 5.** Step 3-4's commit is the honest record of what "failing silently" actually looked like first. |
+| Know the loop's monthly cost at its current cadence | **≈ $0.45/month** at the daily `/schedule` cadence (Step 2) — an estimate, clearly labeled, after a real measurement attempt was blocked by a zero API credit balance. |
+
+Two commits capture the "if it failed silently, fix that first" arc as it actually
+happened, not as a retelling: [`edba811`](https://github.com/asadullah48/crash-course/commit/edba811)
+sabotages the loop with no safety net and shows the silence; the observability fix
+lands on top of it, still on this branch, before any diagnosis was written up.
+
