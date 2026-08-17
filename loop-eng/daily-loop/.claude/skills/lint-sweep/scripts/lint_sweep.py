@@ -52,6 +52,10 @@ PROJECT_DIR = "loop-eng/daily-loop"  # this script audits the WHOLE repo, so unl
 SPINE = f"{PROJECT_DIR}/progress.md"
 LOG = f"{PROJECT_DIR}/loop.log"
 SCOPE = f"{PROJECT_DIR}/scope.txt"
+RUFF_CONFIG = f"{PROJECT_DIR}/.claude/skills/lint-sweep/ruff.toml"  # extends just
+# one rule's fix from "unsafe" to "safe" for THIS loop's maker pass -- see that
+# file for why. Deliberately narrower than passing --unsafe-fixes, which would
+# hand every unsafe fix in ruff's whole rule set to an unattended maker.
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -123,7 +127,7 @@ def read_scope():
 # ══════════════════════════════════════════════════════════════════════════
 
 def _ruff_json(paths, fix):
-    cmd = ["ruff", "check", *paths, "--output-format=json"]
+    cmd = ["ruff", "check", "--config", RUFF_CONFIG, *paths, "--output-format=json"]
     if fix:
         cmd.append("--fix")
     result = subprocess.run(cmd, capture_output=True, text=True)

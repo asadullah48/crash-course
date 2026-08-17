@@ -1,0 +1,25 @@
+# Config for THIS loop's ruff calls only (lint_sweep.py passes --config
+# pointing here). Promotes one specific rule's fix from "unsafe" to "safe"
+# -- narrower than the CLI's --unsafe-fixes flag, which would hand every
+# unsafe fix in ruff's whole rule set to an unattended maker.
+#
+# F841 (unused-variable): ruff marks this rule's fix "unsafe"
+# unconditionally, even for the simplest case (`x = 5` where `x` is never
+# read again) -- see https://docs.astral.sh/ruff/rules/unused-variable/.
+# That means the maker's default, safe-fixes-only `ruff check --fix` can
+# NEVER clear an F841 on its own, no matter how trivial -- every single
+# F841 that shows up in a scoped directory is guaranteed to fall through
+# to "NEEDS HUMAN", forever, by construction.
+#
+# Confirmed twice in loop.log/progress.md, same file:line:code both times:
+#   2026-08-13 03:06 UTC  FAILED  loop-eng/break-it-on-purpose/.claude/skills/morning-brief/scripts/brief.py:52 F841
+#   2026-08-16 03:04 UTC  FAILED  loop-eng/break-it-on-purpose/.claude/skills/morning-brief/scripts/brief.py:52 F841
+#
+# Promoting just this one rule lets the maker actually fix the mechanical,
+# no-side-effect case instead of pausing the loop for a human every time an
+# unused local variable shows up -- the checker (a fresh, unfixed ruff pass,
+# same as before) still independently confirms the result, so nothing here
+# weakens the maker-checker split.
+
+[lint]
+extend-safe-fixes = ["F841"]
