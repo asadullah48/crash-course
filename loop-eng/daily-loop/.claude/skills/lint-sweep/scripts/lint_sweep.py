@@ -127,9 +127,16 @@ def read_scope():
 # ══════════════════════════════════════════════════════════════════════════
 
 def _ruff_json(paths, fix):
-    cmd = ["ruff", "check", "--config", RUFF_CONFIG, *paths, "--output-format=json"]
+    cmd = ["ruff", "check", *paths, "--output-format=json"]
     if fix:
-        cmd.append("--fix")
+        # RUFF_CONFIG only ever changes fix *applicability* (safe vs unsafe),
+        # never which issues get reported -- but it's scoped to the actual
+        # --fix call only, on purpose, so a read-only pass (the checker, and
+        # the maker's own before-count) always sees ruff's unmodified,
+        # out-of-the-box verdict. Two separate calls, on purpose (see above):
+        # the maker never gets to grade its own work, and now it doesn't even
+        # get to grade it with a config only it uses.
+        cmd += ["--config", RUFF_CONFIG, "--fix"]
     result = subprocess.run(cmd, capture_output=True, text=True)
     # ruff exits 1 when it finds (unfixed) issues -- not a tool failure.
     if result.returncode not in (0, 1):
