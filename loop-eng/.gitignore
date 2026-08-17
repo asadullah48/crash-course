@@ -5,5 +5,5 @@ __pycache__/
 # The spine — per-student memory each project writes at runtime, not source
 progress.md
 
-# The harness log (break-it-on-purpose) — per-student runtime state, not source
+# The harness log (break-it-on-purpose, daily-loop) — runtime state, not source
 loop.log

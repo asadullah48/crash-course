@@ -1,0 +1,5 @@
+# Your own permission overrides — yours, not the project's.
+.claude/settings.local.json
+
+# Runtime status file written by long_task.py — a run artifact, not source.
+.task/

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(lint-sweep)",
+      "Bash(python3 loop-eng/daily-loop/.claude/skills/lint-sweep/scripts/lint_sweep.py)",
+      "Bash(git worktree add:*)",
+      "Bash(git worktree remove:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create:*)"
+    ]
+  }
+}
