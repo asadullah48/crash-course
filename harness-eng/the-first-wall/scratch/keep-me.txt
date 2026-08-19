@@ -1,0 +1,5 @@
+This file exists only so the recursive-delete drill has something harmless to target.
+If you're reading this after the drill, the deny rule held and rm -rf never reached it.
+(For the record: during the original drill in this repo, this exact file WAS deleted by
+the rm -fr variant test — see harness-eng/the-first-wall/README.md's honesty-principle
+section. It's recreated here so the shipped project has a fixture to try again.)
