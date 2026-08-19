@@ -9,6 +9,7 @@ Each project is small on purpose. It exists so you can **run one idea** and watc
 | Course | Projects |
 | ------ | -------- |
 | [Loop Engineering](loop-eng/) | 5 projects |
+| [Harness Engineering](harness-eng/) | 3 projects so far |
 
 ## How to use these
 
