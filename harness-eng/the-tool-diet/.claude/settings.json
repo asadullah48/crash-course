@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Skill(morning-brief)",
+      "Bash(py .claude/skills/morning-brief/scripts/brief.py*)"
+    ],
+    "deny": [
+      "WebFetch",
+      "WebSearch",
+      "Bash(sh .claude/skills/morning-brief/scripts/manual_check.sh*)",
+      "Bash(curl *)",
+      "Bash(git log*)",
+      "Bash(git grep*)"
+    ]
+  }
+}
