@@ -52,6 +52,10 @@ PROJECT_DIR = "loop-eng/daily-loop"  # this script audits the WHOLE repo, so unl
 SPINE = f"{PROJECT_DIR}/progress.md"
 LOG = f"{PROJECT_DIR}/loop.log"
 SCOPE = f"{PROJECT_DIR}/scope.txt"
+RUFF_CONFIG = f"{PROJECT_DIR}/.claude/skills/lint-sweep/ruff.toml"  # extends just
+# one rule's fix from "unsafe" to "safe" for THIS loop's maker pass -- see that
+# file for why. Deliberately narrower than passing --unsafe-fixes, which would
+# hand every unsafe fix in ruff's whole rule set to an unattended maker.
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -125,7 +129,14 @@ def read_scope():
 def _ruff_json(paths, fix):
     cmd = ["ruff", "check", *paths, "--output-format=json"]
     if fix:
-        cmd.append("--fix")
+        # RUFF_CONFIG only ever changes fix *applicability* (safe vs unsafe),
+        # never which issues get reported -- but it's scoped to the actual
+        # --fix call only, on purpose, so a read-only pass (the checker, and
+        # the maker's own before-count) always sees ruff's unmodified,
+        # out-of-the-box verdict. Two separate calls, on purpose (see above):
+        # the maker never gets to grade its own work, and now it doesn't even
+        # get to grade it with a config only it uses.
+        cmd += ["--config", RUFF_CONFIG, "--fix"]
     result = subprocess.run(cmd, capture_output=True, text=True)
     # ruff exits 1 when it finds (unfixed) issues -- not a tool failure.
     if result.returncode not in (0, 1):
