@@ -1,0 +1,14 @@
+# Unlike other loop-eng projects, THIS project's spine and harness log must
+# persist across runs: it's driven by an unattended cloud routine, which
+# clones fresh every single beat (A4). The parent loop-eng/.gitignore
+# excludes progress.md and loop.log repo-wide (correct for projects run
+# locally by a human, where the file just lives on disk between runs) --
+# but for a fresh-clone-every-time cloud routine, gitignoring the spine
+# means every beat starts from zero and nothing ever accumulates. That is
+# not a hypothetical: it is what actually happened here (see Project 12's
+# README for how it was found and fixed) -- three real beats ran, and each
+# one only ever saw its own single entry, because the previous beat's
+# write never reached GitHub. Un-ignore both files for this project only;
+# see SKILL.md for how they're now kept persistent via a dedicated branch.
+!progress.md
+!loop.log

@@ -9,8 +9,9 @@ One job, once a day: keep our own `loop-eng/` projects (listed in `scope.txt`, n
 the original course starter kits) ruff-clean, with no PR opened unless there was a
 real, checker-confirmed fix to ship.
 
-**This skill has four steps. The script only owns two of them (maker + checker +
-spine) — worktree and connector are this skill's job, not the script's.**
+**This skill has six steps. The script only owns two of them (maker + checker +
+spine-writing) — worktree, spine persistence, and connector are this skill's job,
+not the script's.**
 
 ## Step 1 — Worktree: isolate today's beat
 
@@ -25,7 +26,29 @@ cd "../crash-course-lint-sweep-$DATE"
 If a worktree/branch for today already exists (the beat already ran once today),
 that's not an error — reuse it, or skip straight to step 2 there.
 
-## Step 2 — Run the script (maker + checker + spine, in one call)
+## Step 2 — Restore the spine before running
+
+**A fresh clone never contains yesterday's `progress.md` on its own.** The spine
+lives on a dedicated, never-merged branch, `claude/daily-loop-spine`, because this
+loop's standing permission is "push to `claude/*`," never "push to `main`" — and the
+spine is pure runtime log data, not code, so it does not belong in a PR reviewed
+alongside real fixes. Before running the script, pull that branch's copies of
+`progress.md` and `loop.log` into the worktree so `read_spine()` actually sees prior
+history:
+
+```bash
+git fetch origin claude/daily-loop-spine 2>/dev/null
+git show origin/claude/daily-loop-spine:loop-eng/daily-loop/progress.md \
+  > loop-eng/daily-loop/progress.md 2>/dev/null || true
+git show origin/claude/daily-loop-spine:loop-eng/daily-loop/loop.log \
+  > loop-eng/daily-loop/loop.log 2>/dev/null || true
+```
+
+On the very first run ever, `claude/daily-loop-spine` does not exist yet — both
+`git show` calls fail silently (`|| true`), and the script starts both files fresh,
+exactly as before.
+
+## Step 3 — Run the script (maker + checker + spine, in one call)
 
 ```bash
 python3 loop-eng/daily-loop/.claude/skills/lint-sweep/scripts/lint_sweep.py
@@ -37,11 +60,27 @@ pass; that separation is the whole point (Concept 11).
 
 | Exit code | What happened | What you do next |
 | --- | --- | --- |
-| `0` | Nothing to fix, all scoped dirs clean | Nothing. Remove the worktree (step 4) and stop. No PR — a clean sweep is not news. |
-| `2` | Found issues, fixed them, checker confirms clean | Go to step 3 — open a PR. |
-| `1` | Issues remain that ruff could not auto-fix, OR `scope.txt`/the issue count broke a safety cap | **Needs a human.** `progress.md` and `loop.log` already have the note (`mark_failure()` wrote it). Do not attempt to fix it yourself, do not open a PR with known issues in it. Remove the worktree (step 4) and stop — a human reads the note next.
+| `0` | Nothing to fix, all scoped dirs clean | Go to step 4 (persist the spine), then step 6 (clean up). No PR — a clean sweep is not news. |
+| `2` | Found issues, fixed them, checker confirms clean | Go to step 4, then step 5 — open a PR. |
+| `1` | Issues remain that ruff could not auto-fix, OR `scope.txt`/the issue count broke a safety cap | **Needs a human.** `progress.md` and `loop.log` already have the note (`mark_failure()` wrote it). Go to step 4 so that note actually survives, then step 6. Do not attempt to fix it yourself, do not open a PR with known issues in it — a human reads the note next.
 
-## Step 3 — Connector: open a PR, only on exit code 2
+## Step 4 — Persist the spine (every beat, every exit code)
+
+This is the step that makes the spine real. Regardless of what happened in step 3,
+commit and force-push `progress.md` and `loop.log` to the dedicated spine branch —
+force, because this branch has exactly one writer (this loop) and always represents
+"current spine content," not a reviewed history:
+
+```bash
+git add -f loop-eng/daily-loop/progress.md loop-eng/daily-loop/loop.log
+git commit -m "Spine: beat for $DATE"
+git push origin HEAD:claude/daily-loop-spine --force
+```
+
+If this step is ever skipped, the loop is back to the original bug: tomorrow's beat
+restores nothing in step 2, and today's entry is gone forever.
+
+## Step 5 — Connector: open a PR, only on exit code 2
 
 ```bash
 git add -A
@@ -55,23 +94,32 @@ gh pr create --base main --head "claude/lint-sweep-$DATE" \
 ```
 
 The `claude/` branch prefix is deliberate (Concept 14): this loop's standing
-permission is "open a PR," never "push to `main`" — a human still merges it.
+permission is "open a PR," never "push to `main`" — a human still merges it. Note
+this is a *second*, separate commit from step 4's spine push — code fixes go through
+review on their own branch; the spine never does, because it isn't code.
 
-## Step 4 — Clean up
+## Step 6 — Clean up
 
 ```bash
 cd -
 git worktree remove "../crash-course-lint-sweep-$DATE" --force
 ```
 
-(`--force` here only discards the *worktree checkout*, not history — the branch and
-its commit are already pushed to `origin` by step 3, or nothing was committed at all
-on exit codes 0/1.)
+(`--force` here only discards the *worktree checkout*, not history — every commit
+from steps 4 and 5 is already pushed to `origin` by the time this runs.)
 
 ## The one thing to hold onto
 
 `progress.md` (the spine — what the work found) and `loop.log` (the harness log — what
-the system did, every beat) are both written by the script, every single beat, success
-or failure. If either file is ever missing an entry for a day the loop should have run,
-that gap is itself the finding — see `loop-eng/break-it-on-purpose/` for why a missing
-log line is worse than any single failed beat.
+the system did, every beat) are both written by the script every single beat, success
+or failure — but writing them locally is not the same as them surviving. This loop's
+spine used to be gitignored, which meant it looked correct inside any one run (the
+script really did write an entry) while silently losing that entry the moment the
+session ended, because a gitignored file never leaves a cloud clone (A4) and the next
+beat starts from nothing. Three real beats ran that way before it was caught: each one
+only ever saw its own single entry. Steps 2 and 4 exist specifically to close that gap
+— restore the spine before running, persist it after, every beat, no exceptions. If
+either file is ever missing an entry for a day the loop should have run, *that* gap is
+the finding now — see `loop-eng/break-it-on-purpose/` for why a missing log line is
+worse than any single failed beat, and see `loop-eng/dreaming-loop/` for the loop built
+specifically to notice this kind of repeated pattern instead of a human having to.
