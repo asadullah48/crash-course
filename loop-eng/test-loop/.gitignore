@@ -1,0 +1,9 @@
+# Your own permission overrides — yours, not the project's.
+.claude/settings.local.json
+
+# Runtime attempt counter written by checker.py — a run artifact, not source.
+.attempts/
+
+# Python test cache
+.pytest_cache/
+__pycache__/
