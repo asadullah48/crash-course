@@ -8,7 +8,9 @@ Each project is small on purpose. It exists so you can **run one idea** and watc
 
 | Course | Projects |
 | ------ | -------- |
-| [Loop Engineering](loop-eng/) | 5 projects |
+| [Loop Engineering](loop-eng/) | 12 numbered projects (all built and run for real) + 4 bonus + 5 original starter kits |
+
+**Next up:** [Harness Engineering](https://agentfactory.panaversity.org/docs/harness-engineering-crash-course) — not started here yet.
 
 ## How to use these
 
