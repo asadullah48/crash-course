@@ -16,3 +16,9 @@ Each project is small on purpose. It exists so you can **run one idea** and watc
 2. Open it in your agent (`cd` into it first — the folder carries its own setup).
 3. Follow its `README.md`.
 4. Break it, change it, keep it. It is yours.
+
+## 👨‍💻 Author
+Worked through by **Asadullah Shafique** as part of *The AI Agent Factory*
+crash courses.
+
+🔗 [asadullahshafique-devunity.vercel.app](https://asadullahshafique-devunity.vercel.app)
